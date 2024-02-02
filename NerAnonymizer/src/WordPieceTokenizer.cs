@@ -19,7 +19,8 @@ public record Prediction(string EntityGroup, double Score, int Start, int End);
 /// </summary>
 public class WordPieceTokenizer
 {
-    private readonly FrozenDictionary<string, int> _tokensToIds;
+    private readonly FrozenDictionary<string, int> _prefixTokensToIds;
+    private readonly FrozenDictionary<string, int> _suffixTokensToIds;
 
     private readonly string[] _idsToTokens;
 
@@ -31,17 +32,18 @@ public class WordPieceTokenizer
     public WordPieceTokenizer(string vocabulary)
     {
         _idsToTokens = vocabulary.Split(["\n", "\r\n"], StringSplitOptions.None);
-        _tokensToIds = _idsToTokens.Select((o, i) => new KeyValuePair<string, int>(o, i)).ToFrozenDictionary();
+        _prefixTokensToIds = _idsToTokens.Select((t, i) => (t, i)).Where(o => !o.t.StartsWith("##")).Select(o => new KeyValuePair<string, int>(o.t, o.i)).ToFrozenDictionary();
+        _suffixTokensToIds = _idsToTokens.Select((t, i) => (t, i)).Where(o => o.t.StartsWith("##")).Select(o => new KeyValuePair<string, int>(o.t[2..], o.i)).ToFrozenDictionary();
     }
 
 
-    public IReadOnlyDictionary<string, int> GetVocab() => _tokensToIds;
+    public IReadOnlyDictionary<string, int> GetVocab() => _prefixTokensToIds;
 
     public int GetVocabSize() => _idsToTokens.Length;
 
     public string? IdToToken(int id) => _idsToTokens[id];
 
-    public int? TokenToId(string token) => _tokensToIds[token];
+    public int? TokenToId(string token) => _prefixTokensToIds[token];
 
 
     /// <summary>
@@ -61,59 +63,54 @@ public class WordPieceTokenizer
         }
 
         // perfect match
-        if (_tokensToIds.TryGetValue(word.Text, out var id))
+        if (_prefixTokensToIds.TryGetValue(word.Text, out var id))
         {
             return [new Token(id, word.Start, word.End)];
         }
 
         var tokens = new List<Token>();
-        var currentWord = word.Text;
-        var start = word.Start;
+        var index = 0;
 
-
-        // this is probably more efficient the other way around... but lets bang my head into the wall trying to solve already solved questions
-        for (int i = currentWord.Length; i > 0; i--)
+        // start chopping the word into longest possible prefix from vocabulary
+        for (int i = word.Text.Length; i > 0; i--)
         {
-            if (_tokensToIds.TryGetValue(currentWord[..i], out var pieceId))
+            if (_prefixTokensToIds.TryGetValue(word.Text[index..i], out var pieceId))
             {
-                tokens.Add(new Token(pieceId, start, start + i));
-                currentWord = currentWord[i..];
-                start += i;
+                tokens.Add(new Token(pieceId, word.Start, word.Start + i));
+                index = i;
                 break;
             }
         }
 
+        // no matching prefix found, give up
         if (tokens.Count == 0)
         {
-            return [new Token(_tokensToIds["[UNK]"], word.Start, word.End)];
+            return [new Token(_prefixTokensToIds["[UNK]"], word.Start, word.End)];
         }
 
-        while (currentWord.Length > 0)
+        while (index < word.Text.Length)
         {
             var unk = true;
-            for (int i = currentWord.Length; i > 0; i--)
+            for (int i = word.Text.Length - index; i > 0; i--)
             {
-                if (_tokensToIds.TryGetValue("##" + currentWord[..i], out var pieceId))
+                if (_suffixTokensToIds.TryGetValue(word.Text[index..(index + i)], out var pieceId))
                 {
                     unk = false;
-                    tokens.Add(new Token(pieceId, start, start + i));
-                    currentWord = currentWord[i..];
-                    start += i;
+                    tokens.Add(new Token(pieceId, word.Start + index, word.Start + index + i));
+                    index += i;
                     break;
                 }
             }
 
+            // if we stumble upon an unknown token in the middle of a word, the whole word becomes unknown
             if (unk)
             {
-                return [new Token(_tokensToIds["[UNK]"], word.Start, word.End)];
+                return [new Token(_prefixTokensToIds["[UNK]"], word.Start, word.End)];
             }
         }
 
-        if (tokens.Count == 0)
-        {
-            return [new Token(_tokensToIds["[UNK]"], word.Start, word.End)];
-        }
-
-        return tokens;
+        return tokens.Any()
+            ? tokens
+            : [new Token(_prefixTokensToIds["[UNK]"], word.Start, word.End)];
     }
 }
