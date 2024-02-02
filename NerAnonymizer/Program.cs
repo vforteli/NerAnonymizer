@@ -1,5 +1,4 @@
 using System.Diagnostics;
-using System.Text;
 using System.Text.Encodings.Web;
 using System.Text.Json;
 using Microsoft.ML.OnnxRuntime;
@@ -28,16 +27,9 @@ using var runner = new NerModelRunner(inferenceSession, tokenizer, config);
 
 var stopwatch = Stopwatch.StartNew();
 
-var groupedResults = runner.RunClassification(input, true);
-
+var groupedResults = runner.RunClassification(input);
 
 Console.WriteLine($"Done after {stopwatch.ElapsedMilliseconds}ms");
-// Console.WriteLine(JsonSerializer.Serialize(groupedResults, jsonSerializerOptions));
 
-var sb = new StringBuilder(input);
-foreach (var entity in groupedResults.Where(o => o.EntityGroup == "PERSON").OrderByDescending(o => o.Start))
-{
-    sb.Remove(entity.Start, entity.End - entity.Start).Insert(entity.Start, "*****");
-}
-
-Console.WriteLine(sb.ToString());
+Console.WriteLine(JsonSerializer.Serialize(groupedResults, jsonSerializerOptions));
+Console.WriteLine(Utils.Anonymize(input, groupedResults));
