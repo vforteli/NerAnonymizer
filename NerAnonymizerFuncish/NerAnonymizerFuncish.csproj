@@ -5,6 +5,11 @@
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
     <InvariantGlobalization>true</InvariantGlobalization>
+
+    <ServerGarbageCollection>false</ServerGarbageCollection>  
+    <InvariantGlobalization>true</InvariantGlobalization>    
+    <!-- <PublishAot>true</PublishAot>
+    <JsonSerializerIsReflectionEnabledByDefault>false</JsonSerializerIsReflectionEnabledByDefault> -->
   </PropertyGroup>
 
   <ItemGroup>
