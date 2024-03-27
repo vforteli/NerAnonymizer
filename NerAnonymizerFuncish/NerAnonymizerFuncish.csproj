@@ -5,16 +5,17 @@
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
     <InvariantGlobalization>true</InvariantGlobalization>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
 
     <ServerGarbageCollection>false</ServerGarbageCollection>  
     <InvariantGlobalization>true</InvariantGlobalization>    
-    <!-- <PublishAot>true</PublishAot>
-    <JsonSerializerIsReflectionEnabledByDefault>false</JsonSerializerIsReflectionEnabledByDefault> -->
+    <PublishAot>true</PublishAot>    
+    <JsonSerializerIsReflectionEnabledByDefault>false</JsonSerializerIsReflectionEnabledByDefault>
   </PropertyGroup>
 
   <ItemGroup>
     <PackageReference Include="Microsoft.AspNetCore.OpenApi" Version="8.0.0" />
-    <PackageReference Include="Swashbuckle.AspNetCore" Version="6.4.0" />
+    <!-- <PackageReference Include="NSwag.AspNetCore" Version="14.0.7" />     -->
   </ItemGroup>
 
   <ItemGroup>
