@@ -1,7 +1,14 @@
 ﻿using System.Collections.Immutable;
 using Microsoft.ML.OnnxRuntime;
+using vforteli.WordPieceTokenizer;
 
 namespace NerAnonymizer;
+
+/// <summary>
+/// Internal raw prediction with only score and index
+/// </summary>
+public record Prediction(string EntityGroup, double Score, int Start, int End);
+
 
 public class NerModelRunner : IDisposable
 {
@@ -32,7 +39,7 @@ public class NerModelRunner : IDisposable
         const int stride = 100;   // todo... some say 20%, which actually is where i ended up by testing
         const int chunkSize = 512 - 2;  // -2 for CLS and SEP
 
-        var tokens = _tokenizer.Tokenize(text);
+        var tokens = _tokenizer.Tokenize(text).ToList();
 
         var results = GetWindowIndexesWithStride(tokens.Count, chunkSize, stride).SelectMany(c =>
         {
@@ -43,7 +50,7 @@ public class NerModelRunner : IDisposable
                 new Token(103, 0,0),    // SEP
             ];
 
-            var output = RunClassification(_inferenceSession.Value, batch.Select(o => o.Id).ToArray());
+            var output = RunClassification(_inferenceSession.Value, batch.Select(o => (long)o.Id).ToArray());
 
             return GetTokenPredictions(_config.IdToLabel, batch, output.ToImmutableArray())
                 .Skip(c == 0 ? 0 : stride / 2) // pick everything from the start if this is the first window

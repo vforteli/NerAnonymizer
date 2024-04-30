@@ -2,6 +2,7 @@ using System.Text.Encodings.Web;
 using System.Text.Json;
 using Microsoft.ML.OnnxRuntime;
 using NerAnonymizer;
+using vforteli.WordPieceTokenizer;
 
 var builder = WebApplication.CreateBuilder(args);
 

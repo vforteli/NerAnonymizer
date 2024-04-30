@@ -3,6 +3,7 @@ using System.Text.Encodings.Web;
 using System.Text.Json;
 using Microsoft.ML.OnnxRuntime;
 using NerAnonymizer;
+using vforteli.WordPieceTokenizer;
 
 const string vocabPath = "../../finbert-ner-onnx/vocab.txt";
 const string modelPath = "../../finbert-ner-onnx/model.onnx";

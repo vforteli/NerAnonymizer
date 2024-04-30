@@ -4,8 +4,10 @@ Perhaps eventually a working anonymizer using finbert-ner and ML.Net
 
 Needs a working wordpiece tokenizer first though...
 
-## Todo
-- Lots of tests
-- word piece tokenizer
-- grouping of outputs
-- Then lots of perf improvements, speed and allocations
+## Build
+
+docker build --tag nerfuncish:v0.3.0 .
+
+## Run
+
+docker run -p 8000:8080 -it nerfuncish:v0.3.0

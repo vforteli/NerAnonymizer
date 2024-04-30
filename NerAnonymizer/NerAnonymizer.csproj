@@ -10,6 +10,7 @@
 
   <ItemGroup>
     <PackageReference Include="Microsoft.ML.OnnxRuntime" Version="1.16.3" />
+    <PackageReference Include="vforteli.WordPieceTokenizer" Version="0.1.0" />
   </ItemGroup>
 
 </Project>

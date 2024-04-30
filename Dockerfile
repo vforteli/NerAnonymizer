@@ -1,5 +1,5 @@
 FROM mcr.microsoft.com/dotnet/sdk:8.0-jammy AS build
-ARG TARGET_ARCH=x64
+ARG TARGET_ARCH=arm64
 
 RUN apt update
 RUN apt install -y clang zlib1g-dev
