@@ -10,21 +10,8 @@ namespace NerAnonymizer;
 public record Prediction(string EntityGroup, double Score, int Start, int End);
 
 
-public class NerModelRunner : IDisposable
+public class NerModelRunner(Lazy<InferenceSession> inferenceSession, Lazy<WordPieceTokenizer> tokenizer, BertNerModelConfig config) : IDisposable
 {
-    private readonly WordPieceTokenizer _tokenizer;
-    private readonly Lazy<InferenceSession> _inferenceSession;
-    private readonly BertNerModelConfig _config;
-
-
-    public NerModelRunner(Lazy<InferenceSession> inferenceSession, WordPieceTokenizer tokenizer, BertNerModelConfig config)
-    {
-        _config = config;
-        _tokenizer = tokenizer;
-        _inferenceSession = inferenceSession;
-    }
-
-
     /// <summary>
     /// Run classification and group results
     /// </summary>
@@ -39,7 +26,7 @@ public class NerModelRunner : IDisposable
         const int stride = 100;   // todo... some say 20%, which actually is where i ended up by testing
         const int chunkSize = 512 - 2;  // -2 for CLS and SEP
 
-        var tokens = _tokenizer.Tokenize(text).ToList();
+        var tokens = tokenizer.Value.Tokenize(text).ToList();
 
         var results = GetWindowIndexesWithStride(tokens.Count, chunkSize, stride).SelectMany(c =>
         {
@@ -50,9 +37,9 @@ public class NerModelRunner : IDisposable
                 new Token(103, 0,0),    // SEP
             ];
 
-            var output = RunClassification(_inferenceSession.Value, batch.Select(o => (long)o.Id).ToArray());
+            var output = RunClassification(inferenceSession.Value, batch.Select(o => (long)o.Id).ToArray());
 
-            return GetTokenPredictions(_config.IdToLabel, batch, output.ToImmutableArray())
+            return GetTokenPredictions(config.IdToLabel, batch, output.ToImmutableArray())
                 .Skip(c == 0 ? 0 : stride / 2) // pick everything from the start if this is the first window
                 .Take(c + chunkSize >= tokens.Count ? chunkSize : chunkSize - stride / 2);  // pick everything until the end if this is the last window
         }).ToList();
@@ -74,9 +61,9 @@ public class NerModelRunner : IDisposable
     {
         GC.SuppressFinalize(this);
 
-        if (_inferenceSession.IsValueCreated)
+        if (inferenceSession.IsValueCreated)
         {
-            _inferenceSession.Value.Dispose();
+            inferenceSession.Value.Dispose();
         }
     }
 
@@ -139,7 +126,7 @@ public class NerModelRunner : IDisposable
 
             if (prediction.EntityGroup.StartsWith("B-") || prediction.EntityGroup == "O")
             {
-                if (currentGroup.Any())
+                if (currentGroup.Count != 0)
                 {
                     yield return GetPredictionResultFromGroup(text, currentGroup);
                     currentGroup.Clear();
@@ -154,7 +141,7 @@ public class NerModelRunner : IDisposable
         }
 
         // if the input doesnt end with O, make sure we also yield any final groups
-        if (currentGroup.Any())
+        if (currentGroup.Count != 0)
         {
             yield return GetPredictionResultFromGroup(text, currentGroup);
             currentGroup.Clear();
@@ -162,16 +149,16 @@ public class NerModelRunner : IDisposable
 
         static PredictionResult GetPredictionResultFromGroup(string text, IReadOnlyList<Prediction> currentGroup)
         {
-            var first = currentGroup.First();
-            var last = currentGroup.Last();
+            var groupStartIndex = currentGroup.First();
+            var groupEndIndex = currentGroup.Last();
 
             return new PredictionResult
             {
-                EntityGroup = first.EntityGroup[2..],   // trim the B- or I-
+                EntityGroup = groupStartIndex.EntityGroup[2..],   // trim the B- or I-
                 Score = currentGroup.Average(o => o.Score),
-                Start = first.Start,
-                End = last.End,
-                Word = text[first.Start..last.End],
+                Start = groupStartIndex.Start,
+                End = groupEndIndex.End,
+                Word = text[groupStartIndex.Start..groupEndIndex.End],
             };
         }
     }

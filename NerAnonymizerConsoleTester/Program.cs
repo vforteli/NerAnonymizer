@@ -13,7 +13,7 @@ var jsonSerializerOptions = new JsonSerializerOptions { WriteIndented = true, En
 
 var vocabulary = await File.ReadAllTextAsync(vocabPath);
 var config = await JsonSerializer.DeserializeAsync<BertNerModelConfig>(File.OpenRead(configPath)) ?? throw new ArgumentNullException("config");
-var tokenizer = new WordPieceTokenizer(vocabulary);
+var tokenizer = new Lazy<WordPieceTokenizer>(() => new WordPieceTokenizer(vocabulary));
 var inferenceSession = new Lazy<InferenceSession>(() => new InferenceSession(modelPath));
 
 
