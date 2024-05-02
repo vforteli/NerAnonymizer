@@ -111,10 +111,16 @@
         "resolved": "1.6.0",
         "contentHash": "COC1aiAJjCoA5GBF+QKL2uLqEBew4JsCkQmoHKbN3TlOZKa2fKLz5CpiRQKDz0RsAOEGsVKqOD5bomsXq/4STQ=="
       },
+      "vforteli.WordPieceTokenizer": {
+        "type": "Transitive",
+        "resolved": "0.1.0",
+        "contentHash": "8Y5Zfup1ZwVhXw8N1DkNSo+kk8RNwwKS7AdSdCu3TzNm5z0HA9Gx+Bsy3J0l/fQNjUE5A1IZ3ayLZ5flH37vJA=="
+      },
       "neranonymizer": {
         "type": "Project",
         "dependencies": {
-          "Microsoft.ML.OnnxRuntime": "[1.16.3, )"
+          "Microsoft.ML.OnnxRuntime": "[1.16.3, )",
+          "vforteli.WordPieceTokenizer": "[0.1.0, )"
         }
       }
     }

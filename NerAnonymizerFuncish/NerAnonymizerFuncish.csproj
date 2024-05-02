@@ -6,8 +6,7 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <InvariantGlobalization>true</InvariantGlobalization>
 
-    <ServerGarbageCollection>false</ServerGarbageCollection>  
-    <InvariantGlobalization>true</InvariantGlobalization>    
+    <ServerGarbageCollection>false</ServerGarbageCollection>   
     <!-- <PublishAot>true</PublishAot>
     <JsonSerializerIsReflectionEnabledByDefault>false</JsonSerializerIsReflectionEnabledByDefault> -->
   </PropertyGroup>
