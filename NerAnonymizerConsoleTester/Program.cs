@@ -27,10 +27,13 @@ var input = TestStrings.LongTestString;
 using var runner = new NerModelRunner(inferenceSession, tokenizer, config);
 
 var stopwatch = Stopwatch.StartNew();
+var allocations = GC.GetTotalAllocatedBytes();
 
 var groupedResults = runner.RunClassification(input);
 
+Console.WriteLine(GC.GetTotalAllocatedBytes() - allocations);
+
 Console.WriteLine($"Done after {stopwatch.ElapsedMilliseconds}ms");
 
-Console.WriteLine(JsonSerializer.Serialize(groupedResults, jsonSerializerOptions));
-Console.WriteLine(Utils.Anonymize(input, groupedResults));
+// Console.WriteLine(JsonSerializer.Serialize(groupedResults, jsonSerializerOptions));
+// Console.WriteLine(Utils.Anonymize(input, groupedResults));
