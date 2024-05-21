@@ -37,3 +37,5 @@ Console.WriteLine($"Done after {stopwatch.ElapsedMilliseconds}ms");
 
 // Console.WriteLine(JsonSerializer.Serialize(groupedResults, jsonSerializerOptions));
 // Console.WriteLine(Utils.Anonymize(input, groupedResults));
+
+// 16822552

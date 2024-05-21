@@ -7,7 +7,7 @@ namespace NerAnonymizer;
 /// <summary>
 /// Internal raw prediction with only score and index
 /// </summary>
-public record Prediction(string EntityGroup, double Score, int Start, int End);
+public record Prediction(string EntityGroup, float Score, int Start, int End);
 
 
 public class NerModelRunner(Lazy<InferenceSession> inferenceSession, Lazy<WordPieceTokenizer> tokenizer, BertNerModelConfig config) : IDisposable
@@ -71,13 +71,17 @@ public class NerModelRunner(Lazy<InferenceSession> inferenceSession, Lazy<WordPi
     /// <summary>
     /// Computer soft max...
     /// </summary>
-    public static IReadOnlyCollection<double> ComputeSoftmax(float[] input)
+    public static IReadOnlyCollection<float> ComputeSoftmax(float[] input)
     {
-        var maxValue = input.Max();
-        var expValues = input.Select(x => Math.Exp(x - maxValue)).ToArray();
+        var expValues = input.Select(MathF.Exp).ToArray();
         var expSum = expValues.Sum();
 
-        return expValues.Select(x => x / expSum).ToArray();
+        for (var i = 0; i < expValues.Length; i++)
+        {
+            expValues[i] = expValues[i] / expSum;
+        }
+
+        return expValues;
     }
 
 
@@ -174,7 +178,7 @@ public class NerModelRunner(Lazy<InferenceSession> inferenceSession, Lazy<WordPi
     ///                         
     /// Returns [0, 8, 16, 24]
     /// </summary>
-    public static ImmutableList<int> GetWindowIndexesWithStride(int count, int size, int stride)
+    public static IReadOnlyList<int> GetWindowIndexesWithStride(int count, int size, int stride)
     {
         if (stride >= size)
         {
@@ -189,7 +193,7 @@ public class NerModelRunner(Lazy<InferenceSession> inferenceSession, Lazy<WordPi
             list.Add(index);
         }
 
-        return list.ToImmutableList();
+        return list;
     }
 
 
