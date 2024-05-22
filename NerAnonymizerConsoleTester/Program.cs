@@ -13,7 +13,7 @@ var jsonSerializerOptions = new JsonSerializerOptions { WriteIndented = true, En
 
 var vocabulary = await File.ReadAllTextAsync(vocabPath);
 var config = await JsonSerializer.DeserializeAsync<BertNerModelConfig>(File.OpenRead(configPath)) ?? throw new ArgumentNullException("config");
-var tokenizer = new WordPieceTokenizer(vocabulary);
+var tokenizer = new Lazy<WordPieceTokenizer>(() => new WordPieceTokenizer(vocabulary));
 var inferenceSession = new Lazy<InferenceSession>(() => new InferenceSession(modelPath));
 
 
@@ -27,10 +27,15 @@ var input = TestStrings.LongTestString;
 using var runner = new NerModelRunner(inferenceSession, tokenizer, config);
 
 var stopwatch = Stopwatch.StartNew();
+var allocations = GC.GetTotalAllocatedBytes();
 
 var groupedResults = runner.RunClassification(input);
 
+Console.WriteLine(GC.GetTotalAllocatedBytes() - allocations);
+
 Console.WriteLine($"Done after {stopwatch.ElapsedMilliseconds}ms");
 
-Console.WriteLine(JsonSerializer.Serialize(groupedResults, jsonSerializerOptions));
-Console.WriteLine(Utils.Anonymize(input, groupedResults));
+// Console.WriteLine(JsonSerializer.Serialize(groupedResults, jsonSerializerOptions));
+// Console.WriteLine(Utils.Anonymize(input, groupedResults));
+
+// 16822552

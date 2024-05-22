@@ -8,7 +8,7 @@ public record PredictionResult
     required public string EntityGroup { get; set; }
 
     [JsonPropertyName("score")]
-    required public double Score { get; set; }
+    required public float Score { get; set; }
 
     [JsonPropertyName("word")]
     required public string Word { get; set; }

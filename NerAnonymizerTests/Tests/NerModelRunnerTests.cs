@@ -1,5 +1,7 @@
+using System.Collections.Immutable;
 using System.Text.Json;
 using NerAnonymizer;
+using vforteli.WordPieceTokenizer;
 
 namespace NerAnonymizerTests;
 
@@ -122,19 +124,19 @@ public class NerModelRunnerTests
             Assert.That(actual[0].Word, Is.EqualTo("Helsingistä"));
             Assert.That(actual[0].Start, Is.EqualTo(0));
             Assert.That(actual[0].End, Is.EqualTo(11));
-            Assert.That(actual[0].Score, Is.EqualTo(0.9995203353993161));
+            Assert.That(actual[0].Score, Is.EqualTo(0.999520361f));
 
             Assert.That(actual[1].EntityGroup, Is.EqualTo("GPE"));
             Assert.That(actual[1].Word, Is.EqualTo("Suomen suuriruhtinaskunnan"));
             Assert.That(actual[1].Start, Is.EqualTo(17));
             Assert.That(actual[1].End, Is.EqualTo(43));
-            Assert.That(actual[1].Score, Is.EqualTo(0.8897629970486827));
+            Assert.That(actual[1].Score, Is.EqualTo(0.889762998f));
 
             Assert.That(actual[2].EntityGroup, Is.EqualTo("DATE"));
             Assert.That(actual[2].Word, Is.EqualTo("vuonna 1812"));
             Assert.That(actual[2].Start, Is.EqualTo(56));
             Assert.That(actual[2].End, Is.EqualTo(67));
-            Assert.That(actual[2].Score, Is.EqualTo(0.9998696644674007));
+            Assert.That(actual[2].Score, Is.EqualTo(0.999869645f));
         });
     }
 
@@ -202,6 +204,50 @@ public class NerModelRunnerTests
         {
             Assert.That(actual, Has.Count.EqualTo(1));
             Assert.That(actual[0], Is.EqualTo(0));
+        });
+    }
+
+    [Test]
+    public void GetTokenPredictions()
+    {
+        var labels = new Dictionary<int, string>
+        {
+            { 0, "A" },
+            { 1, "B" },
+            { 2, "C" },
+        };
+
+        var tokens = new List<Token>
+        {
+            new(0, 0, 1),
+            new(1, 5, 6),
+            new(2, 10, 11),
+        };
+
+        float[] values = [
+            7.2f,
+            4f,
+            2f,
+            1.0f,
+            6f,
+            1.23f,
+            4f,
+            3f,
+            10f,
+        ];
+
+        var actual = NerModelRunner.GetTokenPredictions(labels, tokens, values.ToImmutableArray()).ToList();
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(actual, Has.Count.EqualTo(3));
+            Assert.That(actual[0].Score, Is.EqualTo(0.955768228f));
+            Assert.That(actual[1].Score, Is.EqualTo(0.985009789f));
+            Assert.That(actual[2].Score, Is.EqualTo(0.996620834f));
+
+            Assert.That(actual[0].EntityGroup, Is.EqualTo("A"));
+            Assert.That(actual[1].EntityGroup, Is.EqualTo("B"));
+            Assert.That(actual[2].EntityGroup, Is.EqualTo("C"));
         });
     }
 }

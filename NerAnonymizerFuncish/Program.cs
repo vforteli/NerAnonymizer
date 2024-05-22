@@ -1,5 +1,6 @@
 using System.Text.Encodings.Web;
 using System.Text.Json;
+using System.Text.Json.Serialization;
 using Microsoft.ML.OnnxRuntime;
 using NerAnonymizer;
 using vforteli.WordPieceTokenizer;
@@ -23,8 +24,8 @@ const string configPath = "finbert-ner-onnx/config.json";
 var jsonSerializerOptions = new JsonSerializerOptions { WriteIndented = true, Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping };
 
 var vocabulary = await File.ReadAllTextAsync(vocabPath);
-var config = await JsonSerializer.DeserializeAsync<BertNerModelConfig>(File.OpenRead(configPath)) ?? throw new ArgumentNullException("config");
-var tokenizer = new WordPieceTokenizer(vocabulary);
+var config = await JsonSerializer.DeserializeAsync(File.OpenRead(configPath), SourceGenerationContext.Default.BertNerModelConfig) ?? throw new ArgumentNullException("config");
+var tokenizer = new Lazy<WordPieceTokenizer>(() => new WordPieceTokenizer(vocabulary));
 var inferenceSession = new Lazy<InferenceSession>(() => new InferenceSession(modelPath));
 
 using var runner = new NerModelRunner(inferenceSession, tokenizer, config);
@@ -41,3 +42,11 @@ app.MapGet("/api/anonymize", (string text) =>
 
 
 app.Run();
+
+
+
+[JsonSourceGenerationOptions(WriteIndented = true)]
+[JsonSerializable(typeof(BertNerModelConfig))]
+internal partial class SourceGenerationContext : JsonSerializerContext
+{
+}
