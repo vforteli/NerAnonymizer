@@ -1,4 +1,4 @@
-﻿using System.Collections.Immutable;
+using System.Collections.Immutable;
 using Microsoft.ML.OnnxRuntime;
 using vforteli.WordPieceTokenizer;
 
@@ -7,11 +7,15 @@ namespace NerAnonymizer;
 /// <summary>
 /// Internal raw prediction with only score and index
 /// </summary>
-public record Prediction(string EntityGroup, float Score, int Start, int End);
+public record struct Prediction(string EntityGroup, float Score, int Start, int End);
 
-
-public class NerModelRunner(Lazy<InferenceSession> inferenceSession, Lazy<WordPieceTokenizer> tokenizer, BertNerModelConfig config) : IDisposable
+public class NerModelRunner(
+    Lazy<InferenceSession> inferenceSession,
+    Lazy<WordPieceTokenizer> tokenizer,
+    BertNerModelConfig config) : IDisposable
 {
+    private static readonly RunOptions RunOptions = new();
+
     /// <summary>
     /// Run classification and group results
     /// </summary>
@@ -23,25 +27,29 @@ public class NerModelRunner(Lazy<InferenceSession> inferenceSession, Lazy<WordPi
     /// </summary>
     public IEnumerable<PredictionResult> RunClassification(string text, bool groupResults)
     {
-        const int stride = 100;   // todo... some say 20%, which actually is where i ended up by testing
-        const int chunkSize = 512 - 2;  // -2 for CLS and SEP
+        const int stride = 100; // todo... some say 20%, which actually is where i ended up by testing
+        const int chunkSize = 512;
+        const int trimmedChunkSize = chunkSize - 2; // -2 for CLS and SEP
 
-        var tokens = tokenizer.Value.Tokenize(text).ToList();
+        var tokens = tokenizer.Value.Tokenize(text).ToImmutableList();
+        var labels = config.IdToLabel.Values.ToImmutableArray();
 
         var results = GetWindowIndexesWithStride(tokens.Count, chunkSize, stride).SelectMany(c =>
         {
             List<Token> batch =
             [
-                new Token(102, 0, 0),   // CLS
-                ..tokens.Skip(c).Take(chunkSize),
-                new Token(103, 0,0),    // SEP
+                new Token(102, 0, 0), // CLS
+                ..tokens.Skip(c).Take(trimmedChunkSize),
+                new Token(103, 0, 0), // SEP
             ];
 
-            var output = RunClassification(inferenceSession.Value, batch.Select(o => (long)o.Id).ToArray());
+            var output = RunModel(inferenceSession.Value, batch.Select(o => (long)o.Id).ToArray());
 
-            return GetTokenPredictions(config.IdToLabel, batch, output.ToImmutableArray())
-                .Skip(c == 0 ? 0 : stride / 2) // pick everything from the start if this is the first window
-                .Take(c + chunkSize >= tokens.Count ? chunkSize : chunkSize - stride / 2);  // pick everything until the end if this is the last window
+            var predictions = GetTokenPredictions(labels, batch, [..output]).ToList()[1..^1];
+
+            var trimmedPredictions = TrimPredictionOutput(predictions, stride, trimmedChunkSize, tokens.Count, c);
+
+            return trimmedPredictions;
         }).ToList();
 
         return groupResults
@@ -56,7 +64,21 @@ public class NerModelRunner(Lazy<InferenceSession> inferenceSession, Lazy<WordPi
             });
     }
 
+    /// <summary>
+    /// Remove the stride tokens
+    /// </summary>
+    public static IEnumerable<Prediction> TrimPredictionOutput(IEnumerable<Prediction> predictions, int stride,
+        int trimmedChunkSize, int tokensCount, int currentIndex) =>
+        predictions
+            .Skip(currentIndex == 0 ? 0 : stride / 2)
+            .Take(currentIndex + trimmedChunkSize >= tokensCount
+                ? trimmedChunkSize
+                : trimmedChunkSize - (currentIndex == 0 ? stride / 2 : stride));
 
+
+    /// <summary>
+    /// Dispose
+    /// </summary>
     public void Dispose()
     {
         GC.SuppressFinalize(this);
@@ -68,17 +90,23 @@ public class NerModelRunner(Lazy<InferenceSession> inferenceSession, Lazy<WordPi
     }
 
 
-    /// <summary>
-    /// Computer soft max...
-    /// </summary>
-    public static IReadOnlyCollection<float> ComputeSoftmax(float[] input)
+    /// <summary> 
+    /// Compute soft max... 
+    /// </summary> 
+    public static IReadOnlyList<float> ComputeSoftmax(ReadOnlySpan<float> input)
     {
-        var expValues = input.Select(MathF.Exp).ToArray();
-        var expSum = expValues.Sum();
+        var expValues = new float[input.Length];
+
+        float expSum = 0;
+        for (var i = 0; i < input.Length; i++)
+        {
+            expValues[i] = MathF.Exp(input[i]);
+            expSum += expValues[i];
+        }
 
         for (var i = 0; i < expValues.Length; i++)
         {
-            expValues[i] = expValues[i] / expSum;
+            expValues[i] /= expSum;
         }
 
         return expValues;
@@ -88,25 +116,20 @@ public class NerModelRunner(Lazy<InferenceSession> inferenceSession, Lazy<WordPi
     /// <summary>
     /// Get predictions from model output
     /// </summary>   
-    public static IEnumerable<Prediction> GetTokenPredictions(IReadOnlyDictionary<int, string> labels, IReadOnlyList<Token> tokens, ImmutableArray<float> values)
+    public static List<Prediction> GetTokenPredictions(ImmutableArray<string> labels, IReadOnlyList<Token> tokens,
+        ImmutableArray<float> values)
     {
-        var chunks = values.Chunk(labels.Count);
+        return values
+            .Chunk(labels.Length)
+            .Zip(tokens, (chunk, token) =>
+            {
+                var (score, label) = ComputeSoftmax(chunk)
+                    .Zip(labels)
+                    .MaxBy(o => o.First);
 
-        foreach (var (chunk, index) in chunks.Select((o, i) => (o, i)))
-        {
-            var scores = ComputeSoftmax(chunk).Zip(labels);
-
-            // foreach (var (value, labels) in scores)
-            // {
-            //     Console.WriteLine($"{labels.Value}: {value}");
-            // }
-
-            var bestScore = scores.MaxBy(o => o.First);
-
-            var token = tokens[index];
-
-            yield return new Prediction(bestScore.Second.Value, bestScore.First, token.Start, token.End);
-        }
+                return new Prediction(label, score, token.Start, token.End);
+            })
+            .ToList();
     }
 
 
@@ -116,7 +139,7 @@ public class NerModelRunner(Lazy<InferenceSession> inferenceSession, Lazy<WordPi
     /// </summary>
     public static IEnumerable<PredictionResult> GetGroupedPredictions(IEnumerable<Prediction> predictions, string text)
     {
-        var currentGroup = new List<Prediction>();
+        var currentGroup = new List<Prediction>(10);
         var currentGroupName = "";
 
         foreach (var prediction in predictions)
@@ -158,7 +181,7 @@ public class NerModelRunner(Lazy<InferenceSession> inferenceSession, Lazy<WordPi
 
             return new PredictionResult
             {
-                EntityGroup = groupStartIndex.EntityGroup[2..],   // trim the B- or I-
+                EntityGroup = groupStartIndex.EntityGroup[2..], // trim the B- or I-
                 Score = currentGroup.Average(o => o.Score),
                 Start = groupStartIndex.Start,
                 End = groupEndIndex.End,
@@ -200,19 +223,28 @@ public class NerModelRunner(Lazy<InferenceSession> inferenceSession, Lazy<WordPi
     /// <summary>
     /// Run classification with some model
     /// </summary>
-    public static ReadOnlySpan<float> RunClassification(InferenceSession session, ReadOnlySpan<long> tokenIds)
+    public static float[] RunModel(InferenceSession session, ReadOnlySpan<long> tokenIds)
     {
         var shape = new long[] { 1, tokenIds.Length };
 
+        var ones = new long[tokenIds.Length];
+        Array.Fill(ones, 1);
+
+        var zeros = new long[tokenIds.Length];
+        Array.Fill(zeros, 0);
+
+        using var inputs = OrtValue.CreateTensorValueFromMemory(tokenIds.ToArray(), shape);
+        using var attentionMask = OrtValue.CreateTensorValueFromMemory(ones, shape);
+        using var tokenTypeIds = OrtValue.CreateTensorValueFromMemory(zeros, shape);
+
         var ortValues = new Dictionary<string, OrtValue>
         {
-            { "input_ids",  OrtValue.CreateTensorValueFromMemory(tokenIds.ToArray(), shape) },
-            { "attention_mask", OrtValue.CreateTensorValueFromMemory(Enumerable.Repeat((long)1, tokenIds.Length).ToArray(), shape)},
-            { "token_type_ids", OrtValue.CreateTensorValueFromMemory(Enumerable.Repeat((long)0, tokenIds.Length).ToArray(), shape) },
+            { "input_ids", inputs },
+            { "attention_mask", attentionMask },
+            { "token_type_ids", tokenTypeIds },
         };
 
-        using var output = session.Run(new RunOptions(), ortValues, session.OutputNames);
-
-        return output[0].GetTensorDataAsSpan<float>();
+        using var output = session.Run(RunOptions, ortValues, session.OutputNames);
+        return output[0].GetTensorDataAsSpan<float>().ToArray();
     }
 }
