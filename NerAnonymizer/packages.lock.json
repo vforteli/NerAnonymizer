@@ -4,23 +4,23 @@
     "net8.0": {
       "Microsoft.ML.OnnxRuntime": {
         "type": "Direct",
-        "requested": "[1.16.3, )",
-        "resolved": "1.16.3",
-        "contentHash": "N/FLnuU8TFxn4DGl7t5Nb2fTo62FtXPbCOPXQHWNWZ/AiUghmV7J6tuGkP89NOOd5Fe4FVmbmXyc8EbiNj2ZCA==",
+        "requested": "[1.20.0, )",
+        "resolved": "1.20.0",
+        "contentHash": "0vki11cpz/GGe2R3McIEXQTO+5LQdtRGILlaqULnAq/dYxjIMkLIFwj/JyBS0mKr4gEjgr9DNewc1pZmNdcHQQ==",
         "dependencies": {
-          "Microsoft.ML.OnnxRuntime.Managed": "1.16.3"
+          "Microsoft.ML.OnnxRuntime.Managed": "1.20.0"
         }
       },
       "vforteli.WordPieceTokenizer": {
         "type": "Direct",
-        "requested": "[0.1.0, )",
-        "resolved": "0.1.0",
-        "contentHash": "8Y5Zfup1ZwVhXw8N1DkNSo+kk8RNwwKS7AdSdCu3TzNm5z0HA9Gx+Bsy3J0l/fQNjUE5A1IZ3ayLZ5flH37vJA=="
+        "requested": "[0.1.1, )",
+        "resolved": "0.1.1",
+        "contentHash": "E3QlwXv1Mk+KOgLr4iEhTnVuOlwQcp9IMwe5N2N3QtphSCZ6WFv7rzjCkP0zQ27bbebO1mzH+A8467z+qfmGrg=="
       },
       "Microsoft.ML.OnnxRuntime.Managed": {
         "type": "Transitive",
-        "resolved": "1.16.3",
-        "contentHash": "w4uDtHgBvOQyJT51SndFZK2UiW7o4ecZOYFtvClJL0AqWXVtFGQBTA77Peb17AS1xMkjYoHV4uVyJRqEZYxZ3w==",
+        "resolved": "1.20.0",
+        "contentHash": "oo5zUEnnVFD0vFLAiHqj2ya48nVxhPwonjIT8uT7QXv/oHfDHa0u+o0yUKERVssqPtyt5D5xiBAiHjZintu7tg==",
         "dependencies": {
           "System.Memory": "4.5.5"
         }
