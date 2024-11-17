@@ -45,7 +45,7 @@ public class NerModelRunner(
 
             var output = RunModel(inferenceSession.Value, batch.Select(o => (long)o.Id).ToArray());
 
-            var predictions = GetTokenPredictions(labels, batch, [..output]).ToList()[1..^1];
+            var predictions = GetTokenPredictions(labels, batch, output)[1..^1];
 
             var trimmedPredictions = TrimPredictionOutput(predictions, stride, trimmedChunkSize, tokens.Count, c);
 
@@ -67,8 +67,12 @@ public class NerModelRunner(
     /// <summary>
     /// Remove the stride tokens
     /// </summary>
-    public static IEnumerable<Prediction> TrimPredictionOutput(IEnumerable<Prediction> predictions, int stride,
-        int trimmedChunkSize, int tokensCount, int currentIndex) =>
+    public static IEnumerable<Prediction> TrimPredictionOutput(
+        IEnumerable<Prediction> predictions,
+        int stride,
+        int trimmedChunkSize,
+        int tokensCount,
+        int currentIndex) =>
         predictions
             .Skip(currentIndex == 0 ? 0 : stride / 2)
             .Take(currentIndex + trimmedChunkSize >= tokensCount
@@ -117,7 +121,7 @@ public class NerModelRunner(
     /// Get predictions from model output
     /// </summary>   
     public static List<Prediction> GetTokenPredictions(ImmutableArray<string> labels, IReadOnlyList<Token> tokens,
-        ImmutableArray<float> values)
+        float[] values)
     {
         return values
             .Chunk(labels.Length)
@@ -223,7 +227,7 @@ public class NerModelRunner(
     /// <summary>
     /// Run classification with some model
     /// </summary>
-    public static float[] RunModel(InferenceSession session, ReadOnlySpan<long> tokenIds)
+    public static float[] RunModel(InferenceSession session, long[] tokenIds)
     {
         var shape = new long[] { 1, tokenIds.Length };
 
@@ -233,7 +237,7 @@ public class NerModelRunner(
         var zeros = new long[tokenIds.Length];
         Array.Fill(zeros, 0);
 
-        using var inputs = OrtValue.CreateTensorValueFromMemory(tokenIds.ToArray(), shape);
+        using var inputs = OrtValue.CreateTensorValueFromMemory(tokenIds, shape);
         using var attentionMask = OrtValue.CreateTensorValueFromMemory(ones, shape);
         using var tokenTypeIds = OrtValue.CreateTensorValueFromMemory(zeros, shape);
 
