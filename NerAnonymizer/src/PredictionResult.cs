@@ -5,17 +5,17 @@ namespace NerAnonymizer;
 public record PredictionResult
 {
     [JsonPropertyName("entity_group")]
-    required public string EntityGroup { get; set; }
+    public required string EntityGroup { get; init; }
 
     [JsonPropertyName("score")]
-    required public float Score { get; set; }
+    public required float Score { get; init; }
 
     [JsonPropertyName("word")]
-    required public string Word { get; set; }
+    public required string Word { get; init; }
 
     [JsonPropertyName("start")]
-    required public int Start { get; set; }
+    public required int Start { get; init; }
 
     [JsonPropertyName("end")]
-    required public int End { get; set; }
+    public required int End { get; init; }
 }
