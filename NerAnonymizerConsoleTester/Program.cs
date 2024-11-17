@@ -10,13 +10,17 @@ const string vocabPath = "../../../../finbert-ner-onnx/vocab.txt";
 const string modelPath = "../../../../finbert-ner-onnx/model.onnx";
 const string configPath = "../../../../finbert-ner-onnx/config.json";
 
+
 var jsonSerializerOptions = new JsonSerializerOptions
-    { WriteIndented = true, Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping };
+{
+    WriteIndented = true,
+    Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping,
+    TypeInfoResolver = SourceGenerationContext.Default
+};
 
 var vocabulary = await File.ReadAllTextAsync(vocabPath);
 var config =
-    await JsonSerializer.DeserializeAsync<BertNerModelConfig>(File.OpenRead(configPath),
-        SourceGenerationContext.Default.BertNerModelConfig) ??
+    await JsonSerializer.DeserializeAsync<BertNerModelConfig>(File.OpenRead(configPath), jsonSerializerOptions) ??
     throw new ArgumentNullException("config");
 var tokenizer = new Lazy<WordPieceTokenizer>(() => new WordPieceTokenizer(vocabulary));
 var inferenceSession = new Lazy<InferenceSession>(() => new InferenceSession(modelPath));
