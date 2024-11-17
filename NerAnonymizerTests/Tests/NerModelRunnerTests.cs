@@ -10,106 +10,107 @@ public class NerModelRunnerTests
     [Test]
     public void TestPredictionGrouping()
     {
-        var predictionsJson = """
-                              [
-                              {
-                                  "EntityGroup": "O",
-                                  "Score": 0.999986184563546,
-                                  "Start": 0,
-                                  "End": 0
-                              },
-                              {
-                                  "EntityGroup": "B-GPE",
-                                  "Score": 0.9995203353993161,
-                                  "Start": 0,
-                                  "End": 11
-                              },
-                              {
-                                  "EntityGroup": "O",
-                                  "Score": 0.9999917239122099,
-                                  "Start": 12,
-                                  "End": 16
-                              },
-                              {
-                                  "EntityGroup": "B-GPE",
-                                  "Score": 0.9213893810450849,
-                                  "Start": 17,
-                                  "End": 23
-                              },
-                              {
-                                  "EntityGroup": "I-GPE",
-                                  "Score": 0.7503862692752757,
-                                  "Start": 24,
-                                  "End": 29
-                              },
-                              {
-                                  "EntityGroup": "I-GPE",
-                                  "Score": 0.8744298207460659,
-                                  "Start": 29,
-                                  "End": 31
-                              },
-                              {
-                                  "EntityGroup": "I-GPE",
-                                  "Score": 0.8751325364180739,
-                                  "Start": 31,
-                                  "End": 36
-                              },
-                              {
-                                  "EntityGroup": "I-GPE",
-                                  "Score": 0.9193591785439892,
-                                  "Start": 36,
-                                  "End": 39
-                              },
-                              {
-                                  "EntityGroup": "I-GPE",
-                                  "Score": 0.9496926277495757,
-                                  "Start": 39,
-                                  "End": 42
-                              },
-                              {
-                                  "EntityGroup": "I-GPE",
-                                  "Score": 0.9379511655627142,
-                                  "Start": 42,
-                                  "End": 43
-                              },
-                              {
-                                  "EntityGroup": "O",
-                                  "Score": 0.9999782305576639,
-                                  "Start": 44,
-                                  "End": 55
-                              },
-                              {
-                                  "EntityGroup": "B-DATE",
-                                  "Score": 0.9999094646936848,
-                                  "Start": 56,
-                                  "End": 62
-                              },
-                              {
-                                  "EntityGroup": "I-DATE",
-                                  "Score": 0.9998611485439627,
-                                  "Start": 63,
-                                  "End": 65
-                              },
-                              {
-                                  "EntityGroup": "I-DATE",
-                                  "Score": 0.9998383801645545,
-                                  "Start": 65,
-                                  "End": 67
-                              },
-                              {
-                                  "EntityGroup": "O",
-                                  "Score": 0.9996668204796613,
-                                  "Start": 67,
-                                  "End": 68
-                              },
-                              {
-                                  "EntityGroup": "O",
-                                  "Score": 0.9996668949436028,
-                                  "Start": 68,
-                                  "End": 68
-                              }
-                              ]
-                              """;
+        var predictionsJson =
+            """
+            [
+            {
+                "EntityGroup": "O",
+                "Score": 0.999986184563546,
+                "Start": 0,
+                "End": 0
+            },
+            {
+                "EntityGroup": "B-GPE",
+                "Score": 0.9995203353993161,
+                "Start": 0,
+                "End": 11
+            },
+            {
+                "EntityGroup": "O",
+                "Score": 0.9999917239122099,
+                "Start": 12,
+                "End": 16
+            },
+            {
+                "EntityGroup": "B-GPE",
+                "Score": 0.9213893810450849,
+                "Start": 17,
+                "End": 23
+            },
+            {
+                "EntityGroup": "I-GPE",
+                "Score": 0.7503862692752757,
+                "Start": 24,
+                "End": 29
+            },
+            {
+                "EntityGroup": "I-GPE",
+                "Score": 0.8744298207460659,
+                "Start": 29,
+                "End": 31
+            },
+            {
+                "EntityGroup": "I-GPE",
+                "Score": 0.8751325364180739,
+                "Start": 31,
+                "End": 36
+            },
+            {
+                "EntityGroup": "I-GPE",
+                "Score": 0.9193591785439892,
+                "Start": 36,
+                "End": 39
+            },
+            {
+                "EntityGroup": "I-GPE",
+                "Score": 0.9496926277495757,
+                "Start": 39,
+                "End": 42
+            },
+            {
+                "EntityGroup": "I-GPE",
+                "Score": 0.9379511655627142,
+                "Start": 42,
+                "End": 43
+            },
+            {
+                "EntityGroup": "O",
+                "Score": 0.9999782305576639,
+                "Start": 44,
+                "End": 55
+            },
+            {
+                "EntityGroup": "B-DATE",
+                "Score": 0.9999094646936848,
+                "Start": 56,
+                "End": 62
+            },
+            {
+                "EntityGroup": "I-DATE",
+                "Score": 0.9998611485439627,
+                "Start": 63,
+                "End": 65
+            },
+            {
+                "EntityGroup": "I-DATE",
+                "Score": 0.9998383801645545,
+                "Start": 65,
+                "End": 67
+            },
+            {
+                "EntityGroup": "O",
+                "Score": 0.9996668204796613,
+                "Start": 67,
+                "End": 68
+            },
+            {
+                "EntityGroup": "O",
+                "Score": 0.9996668949436028,
+                "Start": 68,
+                "End": 68
+            }
+            ]
+            """;
 
         var predictions = JsonSerializer.Deserialize<List<Prediction>>(predictionsJson);
         var text = "Helsingistä tuli Suomen suuriruhtinaskunnan pääkaupunki vuonna 1812.";
@@ -217,12 +218,12 @@ public class NerModelRunnerTests
             { 2, "C" },
         };
 
-        var tokens = new List<Token>
-        {
+        Token[] tokens =
+        [
             new(0, 0, 1),
             new(1, 5, 6),
             new(2, 10, 11),
-        };
+        ];
 
         float[] values =
         [
@@ -238,7 +239,7 @@ public class NerModelRunnerTests
         ];
 
         var actual = NerModelRunner
-            .GetTokenPredictions(labels.Values.ToImmutableArray(), tokens, values.ToImmutableArray()).ToList();
+            .GetTokenPredictions([..labels.Values], tokens, values).ToList();
 
         Assert.Multiple(() =>
         {

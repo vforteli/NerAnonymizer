@@ -1,8 +1,6 @@
 # NerAnonymizer
 
-Perhaps eventually a working anonymizer using finbert-ner and ML.Net
-
-Needs a working wordpiece tokenizer first though...
+Run bert model with ML.Net and anonymize groups
 
 ## Build
 
