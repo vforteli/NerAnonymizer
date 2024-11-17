@@ -1,4 +1,3 @@
-using System.Collections.Immutable;
 using Microsoft.ML.OnnxRuntime;
 using vforteli.WordPieceTokenizer;
 
@@ -31,12 +30,12 @@ public class NerModelRunner(
         const int chunkSize = 512;
         const int trimmedChunkSize = chunkSize - 2; // -2 for CLS and SEP
 
-        var tokens = tokenizer.Value.Tokenize(text).ToImmutableList();
-        var labels = config.IdToLabel.Values.ToImmutableArray();
+        var tokens = tokenizer.Value.Tokenize(text).ToArray();
+        var labels = config.IdToLabel.Values.ToArray();
 
-        var results = GetWindowIndexesWithStride(tokens.Count, chunkSize, stride).SelectMany(c =>
+        var results = GetWindowIndexesWithStride(tokens.Length, chunkSize, stride).SelectMany(c =>
         {
-            List<Token> batch =
+            Token[] batch =
             [
                 new Token(102, 0, 0), // CLS
                 ..tokens.Skip(c).Take(trimmedChunkSize),
@@ -45,12 +44,12 @@ public class NerModelRunner(
 
             var output = RunModel(inferenceSession.Value, batch.Select(o => (long)o.Id).ToArray());
 
-            var predictions = GetTokenPredictions(labels, batch, [..output]).ToList()[1..^1];
+            var predictions = GetTokenPredictions(labels, batch, output)[1..^1];
 
-            var trimmedPredictions = TrimPredictionOutput(predictions, stride, trimmedChunkSize, tokens.Count, c);
+            var trimmedPredictions = TrimPredictionOutput(predictions, stride, trimmedChunkSize, tokens.Length, c);
 
             return trimmedPredictions;
-        }).ToList();
+        }).ToArray();
 
         return groupResults
             ? GetGroupedPredictions(results, text)
@@ -67,8 +66,12 @@ public class NerModelRunner(
     /// <summary>
     /// Remove the stride tokens
     /// </summary>
-    public static IEnumerable<Prediction> TrimPredictionOutput(IEnumerable<Prediction> predictions, int stride,
-        int trimmedChunkSize, int tokensCount, int currentIndex) =>
+    public static IEnumerable<Prediction> TrimPredictionOutput(
+        IEnumerable<Prediction> predictions,
+        int stride,
+        int trimmedChunkSize,
+        int tokensCount,
+        int currentIndex) =>
         predictions
             .Skip(currentIndex == 0 ? 0 : stride / 2)
             .Take(currentIndex + trimmedChunkSize >= tokensCount
@@ -93,7 +96,7 @@ public class NerModelRunner(
     /// <summary> 
     /// Compute soft max... 
     /// </summary> 
-    public static IReadOnlyList<float> ComputeSoftmax(ReadOnlySpan<float> input)
+    public static float[] ComputeSoftmax(ReadOnlySpan<float> input)
     {
         var expValues = new float[input.Length];
 
@@ -116,8 +119,7 @@ public class NerModelRunner(
     /// <summary>
     /// Get predictions from model output
     /// </summary>   
-    public static List<Prediction> GetTokenPredictions(ImmutableArray<string> labels, IReadOnlyList<Token> tokens,
-        ImmutableArray<float> values)
+    public static Prediction[] GetTokenPredictions(string[] labels, Token[] tokens, float[] values)
     {
         return values
             .Chunk(labels.Length)
@@ -129,7 +131,7 @@ public class NerModelRunner(
 
                 return new Prediction(label, score, token.Start, token.End);
             })
-            .ToList();
+            .ToArray();
     }
 
 
@@ -223,7 +225,7 @@ public class NerModelRunner(
     /// <summary>
     /// Run classification with some model
     /// </summary>
-    public static float[] RunModel(InferenceSession session, ReadOnlySpan<long> tokenIds)
+    public static float[] RunModel(InferenceSession session, long[] tokenIds)
     {
         var shape = new long[] { 1, tokenIds.Length };
 
@@ -233,7 +235,7 @@ public class NerModelRunner(
         var zeros = new long[tokenIds.Length];
         Array.Fill(zeros, 0);
 
-        using var inputs = OrtValue.CreateTensorValueFromMemory(tokenIds.ToArray(), shape);
+        using var inputs = OrtValue.CreateTensorValueFromMemory(tokenIds, shape);
         using var attentionMask = OrtValue.CreateTensorValueFromMemory(ones, shape);
         using var tokenTypeIds = OrtValue.CreateTensorValueFromMemory(zeros, shape);
 
