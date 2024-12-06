@@ -34,3 +34,5 @@ COPY --from=build /source/finbert-ner-onnx ./finbert-ner-onnx/
 
 USER $APP_UID
 ENTRYPOINT ["./NerAnonymizerFuncish"]
+
+EXPOSE 8080
